@@ -1,37 +1,56 @@
+# Use Ubuntu 22.04 LTS as a stable base image
 FROM ubuntu:22.04
-LABEL maintainer="Andre Ribeiro <andre.ribeiro.srs@gmail.com>"
 
+# Metadata labels following OCI conventions (replaces the old MAINTAINER instruction)
+LABEL org.opencontainers.image.authors="Andre Ribeiro <andre.ribeiro.srs@gmail.com>" \
+      org.opencontainers.image.license="MIT" \
+      org.opencontainers.image.version="1.0"
+
+# Ensure apt is non‑interactive
 ARG DEBIAN_FRONTEND=noninteractive
+ENV DEBIAN_FRONTEND=$DEBIAN_FRONTEND
 
+# Enable 32‑bit architecture support for Yocto cross‑builds
 RUN dpkg --add-architecture i386
 
 RUN apt-get update && \
-    apt-get upgrade && \
-    apt-get install -y locales sudo \
+    apt-get full-upgrade && \
+    apt-get install -y --no-install-recommends \
     build-essential chrpath cpio debianutils diffstat file gawk gcc git \
     iputils-ping libacl1 liblz4-tool python3 python3-git \
     python3-jinja2 python3-pexpect python3-pip python3-subunit socat \
-    texinfo unzip wget xz-utils zstd
-
-RUN apt-get clean && \
+    texinfo unzip wget xz-utils zstd locales && \
+    # Remove apt caches immediately (in the same layer) to avoid bloating the image
+    apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# By default, Ubuntu uses dash as an alias for sh. Dash does not support the source command
-# needed for setting up Yocto build environments. Use bash as an alias for sh.
-RUN which dash &> /dev/null && (\
-    echo "dash dash/sh boolean false" | debconf-set-selections && \
-    dpkg-reconfigure dash) || \
-    echo "Skipping dash reconfigure (not applicable)"
+# Replace /bin/sh (dash) with bash so scripts relying on 'source' work correctly
+RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
-RUN groupadd build -g 1000
-RUN useradd -ms /bin/bash -p build build -u 1028 -g 1000 && \
-    usermod -aG sudo build && \
-    echo "build:build" | chpasswd
+# Generate and set a UTF‑8 locale (Yocto builds often break without a locale)
+RUN locale-gen en_US.UTF-8 && \
+    update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+ENV LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8
 
-# Set the locale to en_US.UTF-8, because the Yocto build fails without any locale set.
-RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
-ENV LANG en_US.utf8
+# Configure the container timezone (useful for logs, build tools, etc.)
+ENV TZ=America/Argentina/Buenos_Aires
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \
+    echo $TZ > /etc/timezone
 
-USER build
-WORKDIR /public/Work
-RUN git config --global user.email "build@example.com" && git config --global user.name "Build"
+# Create a non‑root user 'builder' with explicit UID/GID for deterministic ownership
+ARG host_uid=1001
+ARG host_gid=1001
+ENV USER_NAME=builder
+RUN groupadd -g ${host_gid} ${USER_NAME} && \
+    useradd --no-log-init -r -g ${host_gid} -u ${host_uid} -m -s /bin/bash ${USER_NAME}
+
+# Switch to the non‑root user for all subsequent steps
+USER ${USER_NAME}
+
+# Set the working directory inside the container
+WORKDIR /home/${USER_NAME}/host
+
+# Configure Git for the 'builder' user
+RUN git config --global user.email "builder@example.com" && \
+    git config --global user.name "Builder"
