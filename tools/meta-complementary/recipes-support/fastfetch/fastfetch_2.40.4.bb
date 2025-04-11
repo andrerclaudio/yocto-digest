@@ -16,7 +16,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384
 # Specify the source URI and its checksum for validation.
 SRC_URI = "git://github.com/fastfetch-cli/fastfetch;protocol=https;branch=master"
 
-SRCREV = "4a1037d2b6f5c8ece2a08b696f03272adb404d9b"
+SRCREV = "563f9598be7f966007c640559c695ac47fe821f3"
 S = "${WORKDIR}/git"
 
 # Inherit the cmake class for building the project.

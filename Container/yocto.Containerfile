@@ -19,6 +19,8 @@ RUN apt-get update && \
     build-essential chrpath cpio debianutils diffstat file gawk gcc git \
     iputils-ping libacl1 liblz4-tool python3 python3-git \
     python3-jinja2 python3-pexpect python3-pip python3-subunit socat \
+    bsdmainutils gcc-multilib git-lfs libegl1-mesa libgmp-dev libmpc-dev \
+    libsdl1.2-dev libssl-dev libusb-1.0-0 pylint xterm \
     texinfo unzip wget xz-utils zstd locales && \
     # Remove apt caches immediately (in the same layer) to avoid bloating the image
     apt-get clean && \
