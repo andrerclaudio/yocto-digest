@@ -18,12 +18,12 @@ SYSTEMD_AUTO_ENABLE = "enable"
 SYSTEMD_SERVICE:${PN}:append = " custom-script.service"
 # Script dependencies
 RDEPENDS:${PN} = "\
-                    python3 (= 3.12.6) \
-                    python3-modules (= 3.12.6) \
-                    python3-threading (= 3.12.6) \
-                    rpi-gpio (= 0.7.1) \
-                    python3-pyserial (= 3.5) \
-                    python3-requests (= 2.31.0) \
+                    python3 \
+                    python3-modules \
+                    python3-threading \
+                    rpi-gpio \
+                    python3-pyserial \
+                    python3-requests \
                 "
 
 # Installation task
