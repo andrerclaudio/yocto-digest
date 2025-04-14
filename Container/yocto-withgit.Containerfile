@@ -47,12 +47,36 @@ ENV USER_NAME=builder
 RUN groupadd -g ${host_gid} ${USER_NAME} && \
     useradd --no-log-init -r -g ${host_gid} -u ${host_uid} -m -s /bin/bash ${USER_NAME}
 
-# Switch to the non‑root user for all subsequent steps
-USER ${USER_NAME}
-
-# Set the working directory inside the container
-WORKDIR /home/${USER_NAME}/host
+# Install KAS tool
+RUN pip install kas
 
 # Configure Git for the 'builder' user
 RUN git config --global user.email "builder@example.com" && \
     git config --global user.name "Builder"
+
+# Build‑time args
+ARG GIT_REPO=https://github.com/bootlin/simplest-yocto-setup/
+ARG GIT_BRANCH=main
+
+# Now drop privileges
+USER ${USER_NAME}
+
+ENV BUILD_INPUT_DIR /home/${USER_NAME}/host/input
+ENV BUILD_OUTPUT_DIR /home/${USER_NAME}/host/output
+RUN mkdir -p ${BUILD_INPUT_DIR} ${BUILD_OUTPUT_DIR}
+
+WORKDIR ${BUILD_INPUT_DIR}
+ 
+RUN git clone --depth 1 --branch ${GIT_BRANCH} \
+    ${GIT_REPO} ${BUILD_INPUT_DIR} && \
+    rm -rf ${BUILD_INPUT_DIR}/.git
+
+# Use kas to download the third-party repositories needed
+RUN kas checkout
+
+# Initialize the build environment
+RUN source openembedded-core/oe-init-build-env && \
+    bitbake core-image-minimal
+
+
+WORKDIR ${BUILD_OUTPUT_DIR}
