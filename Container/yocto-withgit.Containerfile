@@ -16,12 +16,10 @@ RUN dpkg --add-architecture i386
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
-    build-essential chrpath cpio debianutils diffstat file gawk gcc git \
-    iputils-ping libacl1 liblz4-tool python3 python3-git \
+    build-essential chrpath cpio debianutils diffstat file gawk gcc \
+    git iputils-ping libacl1 liblz4-tool locales python3 python3-git \
     python3-jinja2 python3-pexpect python3-pip python3-subunit socat \
-    bsdmainutils gcc-multilib git-lfs libegl1-mesa libgmp-dev libmpc-dev \
-    libsdl1.2-dev libssl-dev libusb-1.0-0 pylint xterm \
-    texinfo unzip wget xz-utils zstd locales && \
+    texinfo unzip wget xz-utils zstd && \
     # Remove apt caches immediately (in the same layer) to avoid bloating the image
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
@@ -55,19 +53,27 @@ RUN git config --global user.email "builder@example.com" && \
     git config --global user.name "Builder"
 
 # Build‑time args
-ENV GIT_REPO=https://github.com/bootlin/simplest-yocto-setup/
-ENV GIT_BRANCH=main
+ARG GIT_REPO=https://github.com/bootlin/simplest-yocto-setup/
+ARG GIT_BRANCH=main
 
 # Now drop privileges
 USER ${USER_NAME}
 
+ENV BUILD_INPUT_DIR /home/${USER_NAME}/host/input
 ENV BUILD_OUTPUT_DIR /home/${USER_NAME}/host/output
-RUN mkdir -p ${BUILD_OUTPUT_DIR}
+RUN mkdir -p ${BUILD_INPUT_DIR} ${BUILD_OUTPUT_DIR}
 
-WORKDIR ${BUILD_OUTPUT_DIR}
+WORKDIR ${BUILD_INPUT_DIR}
 
-CMD git clone --depth 1 --branch ${GIT_BRANCH} ${GIT_REPO} ${BUILD_OUTPUT_DIR} && \
-    rm -rf ${BUILD_OUTPUT_DIR}/.git && \
-    kas checkout ${BUILD_OUTPUT_DIR}/.config.yaml && \
-    source ${BUILD_OUTPUT_DIR}/openembedded-core/oe-init-build-env && \
-    bitbake kiss-image
+ENV BB_ENV_PASSTHROUGH_ADDITIONS="DL_DIR SSTATE_DIR"
+ENV DL_DIR="${BUILD_OUTPUT_DIR}/sstate-cache"
+ENV SSTATE_DIR="${BUILD_OUTPUT_DIR}/downloads"
+ 
+RUN git clone --depth 1 --branch ${GIT_BRANCH} ${GIT_REPO} ${BUILD_INPUT_DIR} && \
+    rm -rf .git && \
+    kas checkout .config.yaml
+
+CMD rm -rf ${BUILD_OUTPUT_DIR}/build/* && \
+    source openembedded-core/oe-init-build-env && \
+    bitbake kiss-image && \
+    cp -r ./* ${BUILD_OUTPUT_DIR}/build/
