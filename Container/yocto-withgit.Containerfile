@@ -26,6 +26,9 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+# Install KAS tool
+RUN pip install kas
+
 # Replace /bin/sh (dash) with bash so scripts relying on 'source' work correctly
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
@@ -47,36 +50,24 @@ ENV USER_NAME=builder
 RUN groupadd -g ${host_gid} ${USER_NAME} && \
     useradd --no-log-init -r -g ${host_gid} -u ${host_uid} -m -s /bin/bash ${USER_NAME}
 
-# Install KAS tool
-RUN pip install kas
-
 # Configure Git for the 'builder' user
 RUN git config --global user.email "builder@example.com" && \
     git config --global user.name "Builder"
 
 # Build‑time args
-ARG GIT_REPO=https://github.com/bootlin/simplest-yocto-setup/
-ARG GIT_BRANCH=main
+ENV GIT_REPO=https://github.com/bootlin/simplest-yocto-setup/
+ENV GIT_BRANCH=main
 
 # Now drop privileges
 USER ${USER_NAME}
 
-ENV BUILD_INPUT_DIR /home/${USER_NAME}/host/input
 ENV BUILD_OUTPUT_DIR /home/${USER_NAME}/host/output
-RUN mkdir -p ${BUILD_INPUT_DIR} ${BUILD_OUTPUT_DIR}
-
-WORKDIR ${BUILD_INPUT_DIR}
- 
-RUN git clone --depth 1 --branch ${GIT_BRANCH} \
-    ${GIT_REPO} ${BUILD_INPUT_DIR} && \
-    rm -rf ${BUILD_INPUT_DIR}/.git
-
-# Use kas to download the third-party repositories needed
-RUN kas checkout
-
-# Initialize the build environment
-RUN source openembedded-core/oe-init-build-env && \
-    bitbake core-image-minimal
-
+RUN mkdir -p ${BUILD_OUTPUT_DIR}
 
 WORKDIR ${BUILD_OUTPUT_DIR}
+
+CMD git clone --depth 1 --branch ${GIT_BRANCH} ${GIT_REPO} ${BUILD_OUTPUT_DIR} && \
+    rm -rf ${BUILD_OUTPUT_DIR}/.git && \
+    kas checkout ${BUILD_OUTPUT_DIR}/.config.yaml && \
+    source ${BUILD_OUTPUT_DIR}/openembedded-core/oe-init-build-env && \
+    bitbake kiss-image
