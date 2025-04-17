@@ -50,8 +50,11 @@ RUN groupadd -g ${host_gid} ${USER_NAME} && \
 # Switch to the non‑root user for all subsequent steps
 USER ${USER_NAME}
 
+ENV BUILD_DIR /home/${USER_NAME}/host
+RUN mkdir -p ${BUILD_DIR}
+
 # Set the working directory inside the container
-WORKDIR /home/${USER_NAME}/host
+WORKDIR ${BUILD_DIR}
 
 # Configure Git for the 'builder' user
 RUN git config --global user.email "builder@example.com" && \
