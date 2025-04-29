@@ -1,0 +1,49 @@
+header:
+  version: 11
+
+machine: raspberrypi0-2w-64
+distro: poky
+target:
+  - core-image-minimal
+
+repos:
+  bitbake:
+    url: "https://git.openembedded.org/bitbake"
+    branch: "2.0"
+    layers:
+      .: excluded
+
+  openembedded-core:
+    url: "https://git.openembedded.org/openembedded-core"
+    branch: scarthgap
+    layers:
+      meta:
+
+  meta-raspberrypi:
+    url: "git://git.yoctoproject.org/meta-raspberrypi"
+    branch: scarthgap
+    layers:
+      meta-raspberrypi:
+
+local_conf_header:
+  meta-raspberrypi: |
+    # Distro definition
+    DISTRO = "rasp-custom"
+
+    # Machine definition for raspberrypi0-2w-64
+    MACHINE = "raspberrypi0-2w-64"
+
+    # License acceptance
+    LICENSE_FLAGS_ACCEPTED = "synaptics-killswitch"
+
+    # Switch to RPM packaging and include package-management in the image
+    PACKAGE_CLASSES = "package_rpm"
+
+    # Set timezone area
+    IMAGE_INSTALL:append =  " tzdata"
+    DEFAULT_TIMEZONE = "America/Sao_Paulo"
+
+    # Remove the old image before the new one generated to save disk space
+    RM_OLD_IMAGE = "1"
+    # Clean up working directory after build
+    INHERIT += "rm_work"
