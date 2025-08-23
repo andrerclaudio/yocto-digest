@@ -29,14 +29,15 @@ THE SOFTWARE.
 import argparse
 import logging
 import time
+
 import paho.mqtt.client as mqtt
 
 # Initialize logging here
 logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s]: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s]: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 
 class MQTTConnectionError(Exception):
@@ -85,7 +86,7 @@ class CustomMqttClient(object):
 
     """
 
-    def __init__(self, topic, client_id='board') -> None:
+    def __init__(self, topic, client_id="board") -> None:
         """
         Initialize an instance of CustomMqttClient.
 
@@ -94,7 +95,7 @@ class CustomMqttClient(object):
 
         """
 
-        # Define the MQTT broker client ID and Topic to subscribe        
+        # Define the MQTT broker client ID and Topic to subscribe
         self.TOPIC = topic
         self.CLIENT_ID = client_id
 
@@ -102,7 +103,6 @@ class CustomMqttClient(object):
         self.mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, self.CLIENT_ID)
         self.mqttc.on_connect = self.__on_connect
         self.mqttc.on_message = self.__on_message
-
 
     def __on_connect(self, client, userdata, flags, rc, properties=None) -> None:
         """
@@ -131,7 +131,6 @@ class CustomMqttClient(object):
         """
 
         if rc == 0:
-
             _ = client
             _ = userdata
             _ = flags
@@ -142,7 +141,6 @@ class CustomMqttClient(object):
             error_msg = f"Connection failed with code {rc}"
             logging.error(error_msg)
             raise MQTTConnectionError(error_msg)
-
 
     def __on_message(self, client, userdata, message) -> None:
         """
@@ -174,27 +172,33 @@ class CustomMqttClient(object):
         topic = message.topic
 
         # This method is called when a message is received on the MQTT topic
-        message = message.payload.decode('utf-8')
+        message = message.payload.decode("utf-8")
         logging.info("Received MQTT message [%s]: %s", topic, message)
 
 
 if __name__ == "__main__":
     # Mqtt code to publish messages to the specified topic.
 
-    parser = argparse.ArgumentParser(description="Publish messages to Mqtt Topic.",
-                                     usage="\n$%(prog)s -p topic-to-publish 'message to publish'")
+    parser = argparse.ArgumentParser(
+        description="Publish messages to Mqtt Topic.",
+        usage="\n$%(prog)s -p topic-to-publish 'message to publish'",
+    )
 
     # Add required arguments for specifying the topic and message
-    parser.add_argument("-p", "--topic", required=True, help="Specify the Mqtt Topic to publish to.")
-    parser.add_argument("message", nargs='+', help="Message to publish to the Mqtt Topic.")
+    parser.add_argument(
+        "-p", "--topic", required=True, help="Specify the Mqtt Topic to publish to."
+    )
+    parser.add_argument(
+        "message", nargs="+", help="Message to publish to the Mqtt Topic."
+    )
 
     args = parser.parse_args()
 
     # Log the provided topic and message
-    logging.info("Topic: %s, Message: %s", args.topic, ' '.join(args.message))
+    logging.info("Topic: %s, Message: %s", args.topic, " ".join(args.message))
 
     # Init the Mqtt class.
-    BROKER_ADDRESS = "mqtt.eclipseprojects.io"
+    BROKER_ADDRESS = "test.mosquitto.org"
     PORT = 1883
     client = CustomMqttClient(str(args.topic))
 
@@ -204,9 +208,33 @@ if __name__ == "__main__":
         client.mqttc.loop_start()
 
         # Publish the message and wait for the result
-        logging.info('Publishing message to Topic.')
-        result = client.mqttc.publish(args.topic, ' '.join(args.message), qos=1, retain=False)
+        logging.info("Publishing message to Topic.")
+        result = client.mqttc.publish(
+            args.topic, " ".join(args.message), qos=1, retain=False
+        )
+
+        # --- ADDED: more INFO logs about publish confirmation ---
+        logging.info(
+            "Publish called: topic=%s payload=%s qos=%s retain=%s",
+            args.topic,
+            " ".join(args.message),
+            1,
+            False,
+        )
+
+        # wait for network/ack now (existing behavior)
         result.wait_for_publish()
+
+        # log confirmation status after wait
+        if result.is_published():
+            logging.info("Publish successful (mid=%s)", getattr(result, "mid", None))
+        else:
+            logging.error(
+                "Publish NOT confirmed (mid=%s)", getattr(result, "mid", None)
+            )
+        logging.info("Client is_connected(): %s", client.mqttc.is_connected())
+        # --------------------------------------------------------
+
         # Ensure the message is sent before proceeding
         time.sleep(2)
 
