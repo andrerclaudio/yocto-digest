@@ -21,7 +21,7 @@ RUN apt-get update && \
     python3-jinja2 python3-pexpect python3-pip python3-subunit socat \
     bsdmainutils gcc-multilib git-lfs libegl1-mesa libgmp-dev libmpc-dev \
     libsdl1.2-dev libssl-dev libusb-1.0-0 pylint xterm \
-    texinfo unzip wget xz-utils zstd locales && \
+    texinfo unzip wget xz-utils zstd locales efitools && \
     # Remove apt caches immediately (in the same layer) to avoid bloating the image
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
