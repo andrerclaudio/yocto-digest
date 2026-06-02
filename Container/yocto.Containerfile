@@ -19,6 +19,7 @@ RUN apt-get update && \
     build-essential chrpath cpio debianutils diffstat file gawk gcc git \
     iputils-ping libacl1 libcrypt-dev locales lz4 \
     python3 python3-git python3-jinja2 python3-pexpect python3-pip python3-subunit \
+    python3-websockets \
     socat texinfo unzip wget xz-utils zstd efitools && \
     # Remove apt caches immediately (in the same layer) to avoid bloating the image
     apt-get clean && \
