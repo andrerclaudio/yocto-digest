@@ -3,8 +3,8 @@ FROM ubuntu:24.04
 
 # Metadata labels following OCI conventions
 LABEL org.opencontainers.image.authors="Andre Ribeiro <andre.ribeiro.srs@gmail.com>" \
-      org.opencontainers.image.license="MIT" \
-      org.opencontainers.image.version="1.1"
+    org.opencontainers.image.license="MIT" \
+    org.opencontainers.image.version="1.1"
 
 # Ensure apt is non-interactive
 ARG DEBIAN_FRONTEND=noninteractive
@@ -52,5 +52,4 @@ RUN mkdir -p ${BUILD_DIR}
 WORKDIR ${BUILD_DIR}
 
 # Configure Git
-RUN git config --global user.email "builder@example.com" && \
-    git config --global user.name "Builder"
+RUN git config --global user.email "builder@example.com" && git config --global user.name "Builder"
